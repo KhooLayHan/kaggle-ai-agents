@@ -2,8 +2,8 @@ import argparse
 import sys
 from rich.console import Console
 from rich.panel import Panel
-from rich.live import Live
-from rich.text import Text
+# from rich.live import Live
+# from rich.text import Text
 from rich.status import Status
 
 # Import project functions
@@ -26,7 +26,7 @@ def run_agent_cli(ticker: str):
             border_style="red"
         ))
         sys.exit(1)
-        
+
     console.print(Panel(
         f"Initializing Multi-Agent system to analyze stock: [bold cyan]{clean_ticker}[/bold cyan]...\n"
         "Agents Involved:\n"
@@ -36,14 +36,14 @@ def run_agent_cli(ticker: str):
         title="AI Agent Trading System",
         border_style="blue"
     ))
-    
+
     # Run the workflow and print streaming events
     try:
         events = run_trading_workflow(clean_ticker)
-        
+
         current_agent = None
         agent_buffer = ""
-        
+
         # We will parse events as they arrive
         with Status(f"Analyzing {clean_ticker} using ADK Workflow...", spinner="dots") as status:
             for event in events:
@@ -59,11 +59,11 @@ def run_agent_cli(ticker: str):
                             border_style=color
                         ))
                         status.start()
-                        
+
                     current_agent = event.author
                     agent_buffer = ""
                     status.update(f"Running [bold]{current_agent}[/bold]...")
-                
+
                 # Check for errors in the event stream
                 if event.error_message:
                     status.stop()
@@ -71,31 +71,31 @@ def run_agent_cli(ticker: str):
                     if "API key" in event.error_message:
                         console.print("[yellow]Hint: Please set the GEMINI_API_KEY environment variable.[/yellow]\n")
                     sys.exit(1)
-                    
+
                 # Append content if available
                 if event.content and event.content.parts:
                     for part in event.content.parts:
                         if part.text:
                             agent_buffer += part.text
-                            
+
             # Print the final agent's report
             if current_agent and agent_buffer.strip():
                 status.stop()
                 color = "yellow" if current_agent == "MarketAnalyst" else "magenta" if current_agent == "RiskManager" else "green"
-                
+
                 # Enforce security disclaimer on final PM output
                 final_text = agent_buffer.strip()
                 if current_agent == "PortfolioManager":
                     final_text = sanitize_and_format_output(final_text)
-                    
+
                 console.print(Panel(
                     final_text,
                     title=f"{current_agent} Output",
                     border_style=color
                 ))
-                
+
         console.print("\n[bold green]Analysis complete.[/bold green]")
-        
+
     except Exception as e:
         console.print(f"\n[bold red]System Error: {e}[/bold red]")
         sys.exit(1)
@@ -104,8 +104,8 @@ def main():
     parser = argparse.ArgumentParser(description="AI Agent Trading and Stock Analysis System CLI")
     parser.add_argument(
         "--ticker", 
-        type=str, 
-        required=True, 
+        type=str,
+        required=True,
         help="Stock ticker symbol to analyze (e.g. AAPL, GOOGL, MSFT)"
     )
     args = parser.parse_args()
