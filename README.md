@@ -27,6 +27,7 @@ A modular, production-grade AI Agent system developed for the **Kaggle AI Agents
 
 1. **Clone & Bootstrap**:
    Bootstrap the virtual environment and dependencies using `uv`:
+
    ```bash
    chmod +x setup.sh
    ./setup.sh
@@ -35,6 +36,7 @@ A modular, production-grade AI Agent system developed for the **Kaggle AI Agents
 
 2. **Configure API Key**:
    Create a `.env` file in the project root:
+
    ```env
    GEMINI_API_KEY="your-gemini-api-key-here"
    ```
@@ -44,19 +46,25 @@ A modular, production-grade AI Agent system developed for the **Kaggle AI Agents
 ## Usage
 
 ### 1. Interactive Trading CLI
+
 Analyze any stock ticker using the terminal interface:
+
 ```bash
 python src/cli.py --ticker GOOGL
 ```
 
 ### 2. Run the MCP Server Standalone
+
 Launch the MCP server in `stdio` mode to plug into custom clients (like Claude Desktop or the Antigravity TUI):
+
 ```bash
 python src/mcp_server.py
 ```
 
 ### 3. Running via Docker
+
 Build and run the agent system inside a secure, containerized sandbox:
+
 ```bash
 # Build the image
 docker build -t trading-agent .
