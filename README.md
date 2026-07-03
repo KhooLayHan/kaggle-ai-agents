@@ -45,23 +45,52 @@ A modular, production-grade AI Agent system developed for the **Kaggle AI Agents
 
 ## Usage
 
-### 1. Interactive Trading CLI
+### 1. Run via ADK CLI (Recommended)
 
-Analyze any stock ticker using the terminal interface:
+The Google ADK CLI auto-discovers `agents/trading_agent/agent.py`, which exports
+`root_agent` (the trading `Workflow`). This is the primary way to run the system.
+
+```bash
+source .venv/bin/activate
+
+# Browser playground — select the "trading_agent" agent to see the workflow graph
+adk web
+
+# Headless interactive session
+adk run trading_agent
+```
+
+When prompted, ask e.g. *"Analyze the stock symbol: AAPL."* The Market Analyst
+retrieves live data via MCP tools, the Risk Manager validates sizing via the
+`enforce_risk_limits` tool, and the Portfolio Manager emits a BUY/SELL/HOLD
+decision with the mandatory compliance disclaimer.
+
+**Security guardrails on the ADK path** are enforced programmatically:
+
+- Invalid tickers are blocked before the model runs (`before_model_callback`).
+- The compliance disclaimer is appended after the Portfolio Manager responds
+  (`after_model_callback`).
+- Position sizing is bounded by the `enforce_risk_limits` tool.
+
+### 2. Interactive Trading CLI (Legacy)
+
+Analyzes any stock ticker via a colorized terminal interface with its own
+pre/post guardrails (defense in depth with the ADK callbacks):
 
 ```bash
 python src/cli.py --ticker GOOGL
 ```
 
-### 2. Run the MCP Server Standalone
+### 3. Run the MCP Server Standalone
 
-Launch the MCP server in `stdio` mode to plug into custom clients (like Claude Desktop or the Antigravity TUI):
+Launch the MCP server in `stdio` mode to plug into custom clients (like Claude
+Desktop or the Antigravity TUI):
 
 ```bash
 python src/mcp_server.py
 ```
 
-### 3. Running via Docker
+### 4. Running via Docker (Alternative)
 
 Build and run the agent system inside a secure, containerized sandbox:
 
@@ -72,6 +101,14 @@ docker build -t trading-agent .
 # Run market analysis
 docker run --env GEMINI_API_KEY="your_api_key" trading-agent --ticker TSLA
 ```
+
+---
+
+## Conventions & Security
+
+See `CONTEXT.md` for the full secure-coding standards, guardrail enforcement
+map, and file map. `AGENTS.md` lists the mandatory behavioral rules for any
+agent operating in this workspace.
 
 ---
 

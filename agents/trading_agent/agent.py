@@ -1,9 +1,19 @@
 import os
+import re
 import sys
 from dotenv import load_dotenv
 from google.adk import Agent, Workflow
-from google.adk.tools import McpToolset
+from google.adk.agents.callback_context import CallbackContext
+from google.adk.models import LlmRequest, LlmResponse
+from google.adk.tools.mcp_tool import McpToolset
+from google.genai import types
 from mcp import StdioServerParameters
+
+from src.security import (
+    sanitize_ticker,
+    enforce_risk_limits,
+    sanitize_and_format_output,
+)
 
 # Load environment variables (e.g. GEMINI_API_KEY)
 load_dotenv()
@@ -28,6 +38,85 @@ trading_mcp_toolset = McpToolset(
     )
 )
 
+# Regex used to locate a candidate ticker token inside user messages.
+_TICKER_PATTERN = re.compile(r"\b([A-Z]{1,5}(?:[.-][A-Z]{1,2})?)\b")
+_SECURITY_REFUSAL = (
+    "Request blocked by security guardrail: no valid stock ticker was found, "
+    "or the supplied symbol failed sanitization. Please provide a 1-5 letter "
+    "ticker symbol (optionally with a dot or hyphen, e.g. 'BRK-B')."
+)
+
+
+def _extract_ticker_from_contents(contents: list[types.Content]) -> str | None:
+    """Scan the latest user message for a candidate ticker token."""
+    for content in reversed(contents):
+        if getattr(content, "role", None) != "user":
+            continue
+        if not content.parts:
+            continue
+        text = "".join(p.text for p in content.parts if getattr(p, "text", None))
+        match = _TICKER_PATTERN.search(text)
+        if match:
+            return match.group(1)
+    return None
+
+
+def market_analyst_before_model(
+    callback_context: CallbackContext, llm_request: LlmRequest
+) -> LlmResponse | None:
+    """
+    Pre-model guardrail for the Market Analyst.
+
+    Extracts a candidate ticker from the incoming user message, runs it through
+    `src.security.sanitize_ticker`, and blocks the model call if it is invalid.
+    This enforces the AGENTS.md input-sanitization rule on the `adk` CLI path
+    (where `src/cli.py` guardrails do not run).
+    """
+    candidate = _extract_ticker_from_contents(llm_request.contents)
+    if candidate is None:
+        # No ticker-like token at all; let the model ask the user for one.
+        return None
+    is_valid, clean = sanitize_ticker(candidate)
+    if not is_valid:
+        return LlmResponse(
+            content=types.Content(
+                role="model",
+                parts=[types.Part.from_text(text=_SECURITY_REFUSAL)],
+            ),
+        )
+    # Valid: stash the normalized ticker in invocation state for downstream use
+    callback_context.state["sanitized_ticker"] = clean
+    return None
+
+
+def portfolio_manager_after_model(
+    callback_context: CallbackContext, llm_response: LlmResponse
+) -> LlmResponse | None:
+    """
+    Post-model guardrail for the Portfolio Manager.
+
+    Guarantees `REQUIRED_DISCLAIMER` is appended to every trade-decision output,
+    satisfying the AGENTS.md disclosure rule on the `adk` CLI path.
+    """
+    if not llm_response.content or not llm_response.content.parts:
+        return None
+    texts = [p.text for p in llm_response.content.parts if getattr(p, "text", None)]
+    joined = "".join(texts)
+    if not joined.strip():
+        return None
+    patched = sanitize_and_format_output(joined)
+    if patched == joined:
+        return None
+    return LlmResponse(
+        content=types.Content(
+            role="model",
+            parts=[types.Part.from_text(text=patched)],
+        ),
+        usage_metadata=llm_response.usage_metadata,
+        grounding_metadata=llm_response.grounding_metadata,
+    )
+
+
 # 1. Market Analyst Agent: retrieves market data and produces technical & sentiment analysis
 market_analyst_agent = Agent(
     name="MarketAnalyst",
@@ -43,6 +132,7 @@ market_analyst_agent = Agent(
         "4. Price Trend Conclusion (Bullish, Bearish, or Neutral) and rationale."
     ),
     tools=[trading_mcp_toolset],
+    before_model_callback=market_analyst_before_model,
 )
 
 # 2. Risk Manager Agent: assesses volatility, stops, sizing, and security guardrails
@@ -57,8 +147,14 @@ risk_manager_agent = Agent(
         "- Determine a clear Stop-Loss (e.g., 5-8% below current price) and Take-Profit (e.g., 15-20% above current price).\n"
         "- Assign a risk rating: LOW, MEDIUM, or HIGH.\n"
         "- Set a compliance status: APPROVED or REJECTED (REJECTED if indicators are extremely volatile or data is missing).\n\n"
+        "MANDATORY: Before finalizing your Risk Assessment Report, you MUST call the "
+        "`enforce_risk_limits` tool with your proposed sizing, stop-loss percentage, and the RSI value "
+        "reported by the Market Analyst. Use the tool's returned `adjusted_size_pct` as your final "
+        "sizing and include any warnings verbatim in your report. If the tool returns "
+        "`approved: false`, your compliance status MUST be REJECTED.\n\n"
         "Provide a structured Risk Assessment Report summarizing your findings."
     ),
+    tools=[enforce_risk_limits],
 )
 
 # 3. Portfolio Manager Agent: makes final decision (BUY/SELL/HOLD) and aggregates details
@@ -83,6 +179,7 @@ portfolio_manager_agent = Agent(
         "Trading stocks and assets involves significant financial risk. Past performance is not indicative of "
         "future results. Always consult with a licensed financial advisor before making any investment decisions.'"
     ),
+    after_model_callback=portfolio_manager_after_model,
 )
 
 # Define the ADK workflow graph coordinating the three specialized agents sequentially
