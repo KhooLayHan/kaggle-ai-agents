@@ -11,11 +11,12 @@ This dispatcher exists so `python main.py` is never a dead-end stub.
 
 import argparse
 import subprocess
+
 from src.cli import run_agent_cli
 
 
 def main():
-    """Temp"""
+    """Main method and entry point for AI Agent Trading System."""
     parser = argparse.ArgumentParser(
         description="AI Agent Trading & Market Analysis System",
         epilog="Primary run path: `adk web` or `adk run trading_agent`",

@@ -3,9 +3,8 @@
 from typing import Generator
 
 from dotenv import load_dotenv
-
-from google.adk.runners import InMemoryRunner
 from google.adk.events.event import Event
+from google.adk.runners import InMemoryRunner
 from google.genai import types
 
 from src.agents.trading_agent.agent import trading_workflow

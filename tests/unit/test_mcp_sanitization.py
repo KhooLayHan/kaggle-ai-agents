@@ -3,7 +3,7 @@
 from unittest.mock import MagicMock
 
 import src.mcp_server as mcp_server
-from src.mcp_server import StockPrice, NewsResponse
+from src.mcp_server import NewsResponse, StockPrice
 
 
 def _patch_yfinance(monkeypatch):

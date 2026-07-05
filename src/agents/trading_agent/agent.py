@@ -3,6 +3,7 @@
 import os
 import re
 import sys
+
 from dotenv import load_dotenv
 from google.adk import Agent, Workflow
 from google.adk.agents.callback_context import CallbackContext
@@ -12,9 +13,9 @@ from google.genai import types
 from mcp import StdioServerParameters
 
 from src.security import (  # noqa: E402
-    sanitize_ticker,
     enforce_risk_limits,
     sanitize_and_format_output,
+    sanitize_ticker,
 )
 
 current_dir = os.path.dirname(os.path.abspath(__file__))

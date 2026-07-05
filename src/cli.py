@@ -1,12 +1,13 @@
 """Legacy rich-console CLI for the multi-agent trading system with pre/post guardrails."""
 
 import sys
+
 from rich.console import Console
 from rich.panel import Panel
 from rich.status import Status
 
 from src.exceptions import WorkflowExecutionError
-from src.security import sanitize_ticker, sanitize_and_format_output
+from src.security import sanitize_and_format_output, sanitize_ticker
 from src.workflow import run_trading_workflow
 
 console = Console()

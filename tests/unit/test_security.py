@@ -1,17 +1,17 @@
 """Unit tests for src.security — ticker sanitization, risk limits, disclaimer."""
 
-from src.security import (
-    sanitize_ticker,
-    enforce_risk_limits,
-    sanitize_and_format_output,
-    RiskAssessment,
-)
 from src.exceptions import (
-    TradingAgentError,
+    IndicatorComputationError,
     MarketDataError,
     TickerNotFoundError,
-    IndicatorComputationError,
+    TradingAgentError,
     WorkflowExecutionError,
+)
+from src.security import (
+    RiskAssessment,
+    enforce_risk_limits,
+    sanitize_and_format_output,
+    sanitize_ticker,
 )
 
 
