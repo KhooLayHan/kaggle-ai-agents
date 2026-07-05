@@ -1,9 +1,13 @@
+import functools
 import logging
 import sys
-from typing import Dict, Any, List
-# import pandas as pd
+from typing import Any, Callable, Dict, List
+
 import yfinance as yf
+from cachetools import TTLCache
 from fastmcp import FastMCP
+
+from src.security import sanitize_ticker
 
 # Setup logging to stderr so it doesn't interfere with stdio JSON-RPC transport
 logging.basicConfig(
@@ -16,20 +20,46 @@ logger = logging.getLogger("mcp_trading_server")
 # Initialize FastMCP Server
 mcp = FastMCP("Market Trading MCP Server")
 
+# TTL caches: price 5 min, indicators 1 hour, news 30 min. Only successful
+# results are cached so transient errors don't poison subsequent calls.
+_PRICE_CACHE: TTLCache = TTLCache(maxsize=128, ttl=300)
+_INDICATORS_CACHE: TTLCache = TTLCache(maxsize=128, ttl=3600)
+_NEWS_CACHE: TTLCache = TTLCache(maxsize=128, ttl=1800)
+
+
+def _cached(cache: TTLCache, key_fn: Callable[..., tuple]) -> Callable:
+    """Decorator: cache successful tool results under a TTLCache."""
+    def deco(fn: Callable[..., Dict[str, Any]]) -> Callable[..., Dict[str, Any]]:
+        @functools.wraps(fn)
+        def wrapper(*args, **kwargs) -> Dict[str, Any]:
+            key = key_fn(*args, **kwargs)
+            if key in cache:
+                return cache[key]
+            result = fn(*args, **kwargs)
+            if isinstance(result, dict) and result.get("status") == "success":
+                cache[key] = result
+            return result
+        return wrapper
+    return deco
+
+
 @mcp.tool()
+@_cached(_PRICE_CACHE, lambda t: (t,))
 def get_stock_price(ticker: str) -> Dict[str, Any]:
     """
     Fetch the latest market price, high, low, open, volume, and currency
     for a given stock ticker symbol.
-    
+
     Args:
         ticker: The stock ticker symbol (e.g., 'AAPL', 'GOOGL', 'TSLA').
-        
+
     Returns:
         A dictionary containing live price statistics or error information.
     """
     logger.info("Fetching stock price for: %s", ticker)
-    ticker_clean = ticker.strip().upper()
+    is_valid, ticker_clean = sanitize_ticker(ticker)
+    if not is_valid:
+        return {"error": f"Invalid ticker: {ticker!r}", "status": "rejected"}
     try:
         t = yf.Ticker(ticker_clean)
         info = t.info
@@ -70,20 +100,23 @@ def get_stock_price(ticker: str) -> Dict[str, Any]:
         return {"error": str(e), "status": "failed"}
 
 @mcp.tool()
+@_cached(_INDICATORS_CACHE, lambda t, p="3mo": (t, p))
 def get_technical_indicators(ticker: str, period: str = "3mo") -> Dict[str, Any]:
     """
     Compute basic technical analysis indicators (SMA_20, SMA_50, RSI, MACD, MACD_Signal)
     for a stock ticker over a specified historical period.
-    
+
     Args:
         ticker: The stock ticker symbol (e.g., 'AAPL', 'MSFT').
         period: Historical period to fetch ('1mo', '3mo', '6mo', '1y'). Default is '3mo'.
-        
+
     Returns:
         A dictionary with the latest calculated values for SMA_20, SMA_50, RSI, MACD, and Signal.
     """
     logger.info("Computing technical indicators for: %s over %s", ticker, period)
-    ticker_clean = ticker.strip().upper()
+    is_valid, ticker_clean = sanitize_ticker(ticker)
+    if not is_valid:
+        return {"error": f"Invalid ticker: {ticker!r}", "status": "rejected"}
     try:
         t = yf.Ticker(ticker_clean)
         # Fetch daily history
@@ -129,19 +162,22 @@ def get_technical_indicators(ticker: str, period: str = "3mo") -> Dict[str, Any]
         return {"error": str(e), "status": "failed"}
 
 @mcp.tool()
+@_cached(_NEWS_CACHE, lambda t: (t,))
 def get_stock_news(ticker: str) -> List[Dict[str, Any]]:
     """
     Retrieve the most recent news articles and sentiment headlines
     for a specified stock ticker.
-    
+
     Args:
         ticker: The stock ticker symbol.
-        
+
     Returns:
         A list of dictionaries representing news items (title, publisher, link, publish time).
     """
     logger.info("Fetching news for ticker: %s", ticker)
-    ticker_clean = ticker.strip().upper()
+    is_valid, ticker_clean = sanitize_ticker(ticker)
+    if not is_valid:
+        return [{"error": f"Invalid ticker: {ticker!r}", "status": "rejected"}]
     try:
         t = yf.Ticker(ticker_clean)
         raw_news = t.news

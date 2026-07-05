@@ -48,26 +48,29 @@ def enforce_risk_limits(
     adjusted_size = proposed_size_pct
     warnings = []
     approved = True
-    
+    requires_review = False
+
     # Rule 1: Sizing bounds
     if proposed_size_pct > 5.0:
         adjusted_size = 5.0
         warnings.append(f"Position size {proposed_size_pct}% exceeds maximum limit of 5.0%. Scaled down to 5.0%.")
-        
+
     # Rule 2: Overbought safety ceiling
     if rsi_value > 70.0 and adjusted_size > 2.0:
         adjusted_size = 2.0
         warnings.append(f"RSI is overbought ({rsi_value:.1f}). Max size restricted to 2.0% for protection.")
-        
+
     # Rule 3: Stop-loss protection
     if stop_loss_pct > 12.0:
         warnings.append(f"Stop-loss gap of {stop_loss_pct}% is too wide (max 12.0%). Position flagged as unsafe.")
         approved = False
     elif stop_loss_pct < 1.5:
-        warnings.append(f"Stop-loss gap of {stop_loss_pct}% is too narrow (min 1.5%). High risk of early exit.")
-        
+        warnings.append(f"Stop-loss gap of {stop_loss_pct}% is too narrow (min 1.5%). High risk of early exit; flagged for review.")
+        requires_review = True
+
     return {
         "approved": approved,
+        "requires_review": requires_review,
         "adjusted_size_pct": adjusted_size,
         "warnings": warnings
     }

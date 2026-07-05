@@ -69,7 +69,7 @@ These standards are mandatory. Each has an enforcement point listed in section 3
 | Rule | ADK CLI path (`adk web`/`adk run`) | Legacy CLI path (`src/cli.py`) |
 |------|-----------------------------------|--------------------------------|
 | Ticker sanitization | `market_analyst_before_model` callback blocks invalid tickers before the model call | `sanitize_ticker` pre-check before workflow launch |
-| 5% sizing cap / 2% overbought ceiling / stop-loss band | `enforce_risk_limits` tool the Risk Manager MUST call; instruction makes compliance status depend on `approved` | Instruction-only (no programmatic enforcement in legacy path today) |
+| 5% sizing cap / 2% overbought ceiling / stop-loss band | `enforce_risk_limits` tool the Risk Manager MUST call; instruction makes compliance status depend on `approved` and `requires_review` | Instruction-only (no programmatic enforcement in legacy path today) |
 | Required disclaimer | `portfolio_manager_after_model` callback appends `REQUIRED_DISCLAIMER` | `sanitize_and_format_output` post-processing on PM output |
 
 Notes:
@@ -86,10 +86,13 @@ All commands assume `source .venv/bin/activate` first.
 
 | Command | Purpose |
 |---------|---------|
-| `adk web` | Browser playground (select `trading_agent`); renders the workflow graph |
-| `adk run trading_agent` | Headless interactive session against the workflow |
-| `python -m src.test_system` | Unit tests: ticker sanitization, risk limits, disclaimer, MCP tools |
-| `python src/cli.py --ticker AAPL` | Legacy rich-console CLI (alternatives path) |
+| `make web` or `adk web` | Browser playground (select `trading_agent`); renders the workflow graph |
+| `make run` or `adk run trading_agent` | Headless interactive session against the workflow |
+| `make test` or `pytest` | Unit tests (offline, no network) — sanitization, risk limits, disclaimer, MCP sanitization |
+| `make test-integration` or `pytest -m integration` | Integration tests (live yfinance network calls) |
+| `make lint` or `ruff check agents/ src/ tests/ main.py` | Lint all source + test files |
+| `python main.py` | Print help and available commands |
+| `python main.py --ticker AAPL` | Legacy rich-console CLI via dispatcher |
 | `python src/mcp_server.py` | Run the MCP server standalone over stdio |
 | `docker build -t trading-agent . && docker run --env GEMINI_API_KEY=... trading-agent --ticker TSLA` | Containerized run (alternatives path) |
 
@@ -109,9 +112,14 @@ All commands assume `source .venv/bin/activate` first.
 | `src/agents.py` | Shim re-exporting canonical agents (legacy import path) |
 | `src/workflow.py` | Shim re-exporting canonical workflow + `run_trading_workflow()` |
 | `src/cli.py` | Legacy rich-console CLI with its own guardrails |
-| `src/mcp_server.py` | FastMCP server exposing price / indicators / news tools over stdio |
+| `src/mcp_server.py` | FastMCP server exposing price / indicators / news tools over stdio (sanitized + TTL-cached) |
 | `src/security.py` | `sanitize_ticker`, `enforce_risk_limits`, `sanitize_and_format_output`, `REQUIRED_DISCLAIMER` |
-| `src/test_system.py` | Unit tests for security + MCP tools |
+| `tests/unit/test_security.py` | Unit tests: ticker sanitization, risk limits (incl. `requires_review`), disclaimer |
+| `tests/unit/test_mcp_sanitization.py` | Unit tests: MCP tool input rejection + cache hit (no network) |
+| `tests/integration/test_mcp_tools_live.py` | Integration tests: live yfinance calls (marked `@pytest.mark.integration`) |
+| `tests/conftest.py` | Pytest config: sys.path bootstrap, marker registration |
+| `main.py` | Entry point dispatcher (`--ticker`, `--web`, or help) |
+| `Makefile` | Shortcuts: `make test`, `make lint`, `make web`, `make run` |
 | `Dockerfile` | Containerized build for the legacy CLI |
 | `setup.sh` | `uv` bootstrap script |
 | `pyproject.toml` / `uv.lock` | Dependencies |

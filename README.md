@@ -110,6 +110,16 @@ See `CONTEXT.md` for the full secure-coding standards, guardrail enforcement
 map, and file map. `AGENTS.md` lists the mandatory behavioral rules for any
 agent operating in this workspace.
 
+### Quick commands
+
+```bash
+make test          # unit tests (offline, no network)
+make test-integration  # live yfinance calls
+make lint          # ruff check
+make web           # adk web playground
+make run           # adk run trading_agent
+```
+
 ---
 
 ## Architecture Diagram

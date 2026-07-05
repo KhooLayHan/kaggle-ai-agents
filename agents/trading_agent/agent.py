@@ -9,7 +9,12 @@ from google.adk.tools.mcp_tool import McpToolset
 from google.genai import types
 from mcp import StdioServerParameters
 
-from src.security import (
+current_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.dirname(os.path.dirname(current_dir))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+
+from src.security import (  # noqa: E402
     sanitize_ticker,
     enforce_risk_limits,
     sanitize_and_format_output,
@@ -151,7 +156,9 @@ risk_manager_agent = Agent(
         "`enforce_risk_limits` tool with your proposed sizing, stop-loss percentage, and the RSI value "
         "reported by the Market Analyst. Use the tool's returned `adjusted_size_pct` as your final "
         "sizing and include any warnings verbatim in your report. If the tool returns "
-        "`approved: false`, your compliance status MUST be REJECTED.\n\n"
+        "`approved: false`, your compliance status MUST be REJECTED. If the tool returns "
+        "`requires_review: true`, you MUST downgrade the risk rating to at least MEDIUM and "
+        "reduce your final sizing by 1%.\n\n"
         "Provide a structured Risk Assessment Report summarizing your findings."
     ),
     tools=[enforce_risk_limits],

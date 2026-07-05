@@ -2,8 +2,6 @@ import argparse
 import sys
 from rich.console import Console
 from rich.panel import Panel
-# from rich.live import Live
-# from rich.text import Text
 from rich.status import Status
 
 # Import project functions
