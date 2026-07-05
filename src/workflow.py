@@ -6,7 +6,7 @@ from google.adk.runners import InMemoryRunner
 from google.adk.events.event import Event
 from google.genai import types
 
-from agents.trading_agent.agent import trading_workflow
+from src.agents.trading_agent.agent import trading_workflow
 
 load_dotenv()
 

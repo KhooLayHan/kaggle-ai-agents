@@ -14,18 +14,19 @@ This document expands on those rules with concrete enforcement points.
 ### Tooling
 - **Package manager:** `uv` (Python 3.13). Bootstrap with `./setup.sh`.
 - **Primary run path:** the Google ADK CLI (`adk web`, `adk run`).
-- **Agent discovery contract:** `agents/<name>/agent.py` must export `root_agent`
+- **Agent discovery contract:** `src/agents/<name>/agent.py` must export `root_agent`
   as a `BaseAgent` or `BaseNode` (a `Workflow` is a `BaseNode`). The ADK CLI
-  auto-discovers this. Do not relocate the agent definition.
+  auto-discovers this via `adk web src/agents` / `adk run src/agents/<name>`.
+  Do not relocate the agent definition.
 - **MCP:** tools are exposed via `fastmcp` over stdio transport (`src/mcp_server.py`).
   The analyst agent mounts them through an `McpToolset` with `StdioServerParameters`.
 - **Dependencies:** declared in `pyproject.toml`; pinned via `uv.lock`. Do not add
   a dependency without updating the lockfile (`uv pip install -e .`).
 
 ### Canonical source of truth
-- `agents/trading_agent/agent.py` is the **single** definition of the three agents,
+- `src/agents/trading_agent/agent.py` is the **single** definition of the three agents,
   the workflow, the callbacks, and the risk tool.
-- `src/agents.py` and `src/workflow.py` are shims that re-import from the canonical
+- `src/workflow.py` is a thin runner that imports `trading_workflow` from the canonical
   module so the legacy `src/cli.py` path keeps working. Do not duplicate agent
   definitions across files.
 
@@ -86,8 +87,8 @@ All commands assume `source .venv/bin/activate` first.
 
 | Command | Purpose |
 |---------|---------|
-| `make web` or `adk web` | Browser playground (select `trading_agent`); renders the workflow graph |
-| `make run` or `adk run trading_agent` | Headless interactive session against the workflow |
+| `make web` or `adk web src/agents` | Browser playground (select `trading_agent`); renders the workflow graph |
+| `make run` or `adk run src/agents/trading_agent` | Headless interactive session against the workflow |
 | `make test` or `pytest` | Unit tests (offline, no network) — sanitization, risk limits, disclaimer, MCP sanitization |
 | `make test-integration` or `pytest -m integration` | Integration tests (live yfinance network calls) |
 | `make lint` or `ruff check agents/ src/ tests/ main.py` | Lint all source + test files |
@@ -107,13 +108,12 @@ All commands assume `source .venv/bin/activate` first.
 
 | Path | Role |
 |------|------|
-| `agents/trading_agent/agent.py` | **Canonical**: 3 agents, workflow, callbacks, risk tool, `root_agent` |
-| `agents/__init__.py`, `agents/trading_agent/__init__.py` | Package markers |
-| `src/agents.py` | Shim re-exporting canonical agents (legacy import path) |
-| `src/workflow.py` | Shim re-exporting canonical workflow + `run_trading_workflow()` |
+| `src/agents/trading_agent/agent.py` | **Canonical**: 3 agents, workflow, callbacks, risk tool, `root_agent` |
+| `src/agents/__init__.py`, `src/agents/trading_agent/__init__.py` | Package markers |
+| `src/workflow.py` | Thin runner importing canonical workflow + `run_trading_workflow()` |
 | `src/cli.py` | Legacy rich-console CLI with its own guardrails |
-| `src/mcp_server.py` | FastMCP server exposing price / indicators / news tools over stdio (sanitized + TTL-cached) |
-| `src/security.py` | `sanitize_ticker`, `enforce_risk_limits`, `sanitize_and_format_output`, `REQUIRED_DISCLAIMER` |
+| `src/mcp_server.py` | FastMCP server exposing price / indicators / news tools over stdio (sanitized + TTL-cached, Pydantic output models) |
+| `src/security.py` | `sanitize_ticker`, `enforce_risk_limits` (→ `RiskAssessment`), `sanitize_and_format_output`, `REQUIRED_DISCLAIMER` |
 | `tests/unit/test_security.py` | Unit tests: ticker sanitization, risk limits (incl. `requires_review`), disclaimer |
 | `tests/unit/test_mcp_sanitization.py` | Unit tests: MCP tool input rejection + cache hit (no network) |
 | `tests/integration/test_mcp_tools_live.py` | Integration tests: live yfinance calls (marked `@pytest.mark.integration`) |

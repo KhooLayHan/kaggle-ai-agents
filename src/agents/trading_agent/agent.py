@@ -10,7 +10,8 @@ from google.genai import types
 from mcp import StdioServerParameters
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
-project_root = os.path.dirname(os.path.dirname(current_dir))
+# Project root is three levels up: src/agents/trading_agent/ → project root
+project_root = os.path.dirname(os.path.dirname(os.path.dirname(current_dir)))
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
@@ -23,10 +24,7 @@ from src.security import (  # noqa: E402
 # Load environment variables (e.g. GEMINI_API_KEY)
 load_dotenv()
 
-# Determine paths for launching the MCP Server
-current_dir = os.path.dirname(os.path.abspath(__file__))
-# The project root is two levels up from this file (agents/trading_agent/agent.py)
-project_root = os.path.dirname(os.path.dirname(current_dir))
+# Path to the MCP server launched as a subprocess for the Analyst Agent
 mcp_server_path = os.path.join(project_root, "src", "mcp_server.py")
 
 # Determine Python interpreter to run the MCP server

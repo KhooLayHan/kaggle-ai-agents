@@ -1,5 +1,15 @@
 import re
-from typing import Dict, Any, Tuple
+from typing import Tuple
+
+from pydantic import BaseModel, Field
+
+
+class RiskAssessment(BaseModel):
+    """Structured result of `enforce_risk_limits`, returned to the Risk Manager agent."""
+    approved: bool
+    requires_review: bool = False
+    adjusted_size_pct: float
+    warnings: list[str] = Field(default_factory=list)
 
 # Required legal and safety disclaimer for trading output
 REQUIRED_DISCLAIMER = (
@@ -35,15 +45,15 @@ def enforce_risk_limits(
     proposed_size_pct: float,
     stop_loss_pct: float,
     rsi_value: float = 50.0
-) -> Dict[str, Any]:
+) -> RiskAssessment:
     """
     Enforce hard risk parameters on suggested trading actions:
     1. Maximum single-position allocation of 5% of total portfolio.
     2. Overbought conditions (RSI > 70) restrict max sizing to 2%.
     3. Stop-loss must be between 2% and 12% below current entry.
-    
+
     Returns:
-        A dictionary with approval status, adjusted sizing, and warning messages.
+        A `RiskAssessment` with approval status, review flag, adjusted sizing, and warnings.
     """
     adjusted_size = proposed_size_pct
     warnings = []
@@ -68,12 +78,12 @@ def enforce_risk_limits(
         warnings.append(f"Stop-loss gap of {stop_loss_pct}% is too narrow (min 1.5%). High risk of early exit; flagged for review.")
         requires_review = True
 
-    return {
-        "approved": approved,
-        "requires_review": requires_review,
-        "adjusted_size_pct": adjusted_size,
-        "warnings": warnings
-    }
+    return RiskAssessment(
+        approved=approved,
+        requires_review=requires_review,
+        adjusted_size_pct=adjusted_size,
+        warnings=warnings,
+    )
 
 def sanitize_and_format_output(output_text: str) -> str:
     """

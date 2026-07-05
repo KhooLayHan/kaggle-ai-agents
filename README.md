@@ -54,10 +54,10 @@ The Google ADK CLI auto-discovers `agents/trading_agent/agent.py`, which exports
 source .venv/bin/activate
 
 # Browser playground — select the "trading_agent" agent to see the workflow graph
-adk web
+adk web src/agents
 
 # Headless interactive session
-adk run trading_agent
+adk run src/agents/trading_agent
 ```
 
 When prompted, ask e.g. *"Analyze the stock symbol: AAPL."* The Market Analyst

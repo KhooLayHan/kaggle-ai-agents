@@ -13,10 +13,10 @@ test-integration:
 	pytest -m integration
 
 lint:
-	ruff check agents/ src/ tests/ main.py
+	ruff check src/ tests/ main.py
 
 run:
-	adk run trading_agent
+	adk run src/agents/trading_agent
 
 web:
 	adk web

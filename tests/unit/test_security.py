@@ -3,6 +3,7 @@ from src.security import (
     sanitize_ticker,
     enforce_risk_limits,
     sanitize_and_format_output,
+    RiskAssessment,
 )
 
 
@@ -23,38 +24,43 @@ def test_ticker_sanitization_invalid():
     assert not is_valid
 
 
+def test_risk_limits_returns_pydantic_model():
+    res = enforce_risk_limits(proposed_size_pct=3.0, stop_loss_pct=5.0, rsi_value=50.0)
+    assert isinstance(res, RiskAssessment)
+
+
 def test_risk_limits_default_safe():
     res = enforce_risk_limits(proposed_size_pct=3.0, stop_loss_pct=5.0, rsi_value=50.0)
-    assert res["approved"] is True
-    assert res["requires_review"] is False
-    assert res["adjusted_size_pct"] == 3.0
+    assert res.approved is True
+    assert res.requires_review is False
+    assert res.adjusted_size_pct == 3.0
 
 
 def test_risk_limits_max_position_truncation():
     res = enforce_risk_limits(proposed_size_pct=10.0, stop_loss_pct=5.0, rsi_value=50.0)
-    assert res["approved"] is True
-    assert res["adjusted_size_pct"] == 5.0
-    assert any("exceeds maximum limit" in w for w in res["warnings"])
+    assert res.approved is True
+    assert res.adjusted_size_pct == 5.0
+    assert any("exceeds maximum limit" in w for w in res.warnings)
 
 
 def test_risk_limits_overbought_ceiling():
     res = enforce_risk_limits(proposed_size_pct=4.0, stop_loss_pct=5.0, rsi_value=75.0)
-    assert res["approved"] is True
-    assert res["adjusted_size_pct"] == 2.0
-    assert any("RSI is overbought" in w for w in res["warnings"])
+    assert res.approved is True
+    assert res.adjusted_size_pct == 2.0
+    assert any("RSI is overbought" in w for w in res.warnings)
 
 
 def test_risk_limits_wide_stop_loss_rejected():
     res = enforce_risk_limits(proposed_size_pct=3.0, stop_loss_pct=15.0, rsi_value=50.0)
-    assert res["approved"] is False
-    assert res["requires_review"] is False
+    assert res.approved is False
+    assert res.requires_review is False
 
 
 def test_risk_limits_narrow_stop_loss_requires_review():
     res = enforce_risk_limits(proposed_size_pct=3.0, stop_loss_pct=1.0, rsi_value=50.0)
-    assert res["approved"] is True
-    assert res["requires_review"] is True
-    assert any("too narrow" in w for w in res["warnings"])
+    assert res.approved is True
+    assert res.requires_review is True
+    assert any("too narrow" in w for w in res.warnings)
 
 
 def test_output_disclaimer_appended():
