@@ -19,7 +19,7 @@ run:
 	adk run src/agents/trading_agent
 
 web:
-	adk web
+	adk web src/agents
 
 clean:
 	rm -rf .pytest_cache .ruff_cache
