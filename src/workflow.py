@@ -1,3 +1,5 @@
+"""ADK workflow runner that drives the sequential Market Analyst → Risk Manager → Portfolio Manager pipeline."""
+
 from typing import Generator
 
 from dotenv import load_dotenv

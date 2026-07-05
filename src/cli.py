@@ -1,10 +1,11 @@
-import argparse
+"""Legacy rich-console CLI for the multi-agent trading system with pre/post guardrails."""
+
 import sys
 from rich.console import Console
 from rich.panel import Panel
 from rich.status import Status
 
-# Import project functions
+from src.exceptions import WorkflowExecutionError
 from src.security import sanitize_ticker, sanitize_and_format_output
 from src.workflow import run_trading_workflow
 
@@ -94,20 +95,6 @@ def run_agent_cli(ticker: str):
 
         console.print("\n[bold green]Analysis complete.[/bold green]")
 
-    except Exception as e:
-        console.print(f"\n[bold red]System Error: {e}[/bold red]")
+    except (RuntimeError, ConnectionError, OSError, KeyError, ValueError, WorkflowExecutionError) as e:
+        console.print(f"\n[bold red]System Error: {type(e).__name__}: {e}[/bold red]")
         sys.exit(1)
-
-def main():
-    parser = argparse.ArgumentParser(description="AI Agent Trading and Stock Analysis System CLI")
-    parser.add_argument(
-        "--ticker", 
-        type=str,
-        required=True,
-        help="Stock ticker symbol to analyze (e.g. AAPL, GOOGL, MSFT)"
-    )
-    args = parser.parse_args()
-    run_agent_cli(args.ticker)
-
-if __name__ == "__main__":
-    main()

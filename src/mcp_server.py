@@ -1,3 +1,5 @@
+"""FastMCP server exposing stock price, technical indicators, and news tools over stdio transport."""
+
 import functools
 import logging
 import sys
@@ -8,6 +10,10 @@ from cachetools import TTLCache
 from fastmcp import FastMCP
 from pydantic import BaseModel, Field
 
+from src.exceptions import (
+    IndicatorComputationError,
+    TickerNotFoundError,
+)
 from src.security import sanitize_ticker
 
 # Setup logging to stderr so it doesn't interfere with stdio JSON-RPC transport
@@ -26,6 +32,16 @@ mcp = FastMCP("Market Trading MCP Server")
 _PRICE_CACHE: TTLCache = TTLCache(maxsize=128, ttl=300)
 _INDICATORS_CACHE: TTLCache = TTLCache(maxsize=128, ttl=3600)
 _NEWS_CACHE: TTLCache = TTLCache(maxsize=128, ttl=1800)
+
+# Builtins that yfinance / pandas can raise during network or data operations.
+_DATA_INFRA_ERRORS = (
+    KeyError,
+    ValueError,
+    IndexError,
+    ConnectionError,
+    TimeoutError,
+    OSError,
+)
 
 
 class StockPrice(BaseModel):
@@ -121,11 +137,7 @@ def get_stock_price(ticker: str) -> StockPrice:
                 low_price = float(hist["Low"].iloc[-1])
                 volume = int(hist["Volume"].iloc[-1])
             else:
-                return StockPrice(
-                    ticker=ticker_clean,
-                    status="failed",
-                    error=f"Could not retrieve price for ticker: {ticker_clean}",
-                )
+                raise TickerNotFoundError(f"No price data found for ticker: {ticker_clean}")
         else:
             open_price = info.get("open") or info.get("regularMarketOpen")
             high_price = info.get("dayHigh") or info.get("regularMarketDayHigh")
@@ -144,7 +156,10 @@ def get_stock_price(ticker: str) -> StockPrice:
             volume=volume,
             currency=currency,
         )
-    except Exception as e:
+    except TickerNotFoundError as e:
+        logger.error("Ticker not found: %s", e)
+        return StockPrice(ticker=ticker_clean, status="not_found", error=str(e))
+    except _DATA_INFRA_ERRORS as e:
         logger.error("Error fetching price for %s: %s", ticker_clean, e)
         return StockPrice(ticker=ticker_clean, status="failed", error=str(e))
 
@@ -173,10 +188,8 @@ def get_technical_indicators(ticker: str, period: str = "3mo") -> TechnicalIndic
         # Fetch daily history
         hist = t.history(period=period, interval="1d")
         if hist.empty or len(hist) < 20:
-            return TechnicalIndicators(
-                ticker=ticker_clean,
-                status="failed",
-                error=f"Insufficient history (need at least 20 periods) for ticker: {ticker_clean}",
+            raise IndicatorComputationError(
+                f"Insufficient history (need at least 20 periods) for ticker: {ticker_clean}"
             )
 
         close_prices = hist["Close"]
@@ -212,7 +225,10 @@ def get_technical_indicators(ticker: str, period: str = "3mo") -> TechnicalIndic
             macd=latest_macd,
             macd_signal=latest_signal,
         )
-    except Exception as e:
+    except IndicatorComputationError as e:
+        logger.error("Indicator computation failed for %s: %s", ticker_clean, e)
+        return TechnicalIndicators(ticker=ticker_clean, status="insufficient_data", error=str(e))
+    except _DATA_INFRA_ERRORS as e:
         logger.error("Error computing indicators for %s: %s", ticker_clean, e)
         return TechnicalIndicators(ticker=ticker_clean, status="failed", error=str(e))
 
@@ -256,7 +272,7 @@ def get_stock_news(ticker: str) -> NewsResponse:
             for item in raw_news[:5]
         ]
         return NewsResponse(ticker=ticker_clean, status="success", items=news_items)
-    except Exception as e:
+    except _DATA_INFRA_ERRORS as e:
         logger.error("Error fetching news for %s: %s", ticker_clean, e)
         return NewsResponse(ticker=ticker_clean, status="failed", error=str(e))
 

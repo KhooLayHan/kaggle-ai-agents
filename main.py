@@ -13,6 +13,7 @@ import subprocess
 from src.cli import run_agent_cli
 
 def main():
+    """Temp"""
     parser = argparse.ArgumentParser(
         description="AI Agent Trading & Market Analysis System",
         epilog="Primary run path: `adk web` or `adk run trading_agent`",

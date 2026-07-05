@@ -120,6 +120,7 @@ All commands assume `source .venv/bin/activate` first.
 | `src/cli.py` | Legacy rich-console CLI with its own guardrails |
 | `src/mcp_server.py` | FastMCP server exposing price / indicators / news tools over stdio (sanitized + TTL-cached, Pydantic output models) |
 | `src/security.py` | `sanitize_ticker`, `enforce_risk_limits` (→ `RiskAssessment`), `sanitize_and_format_output`, `REQUIRED_DISCLAIMER` |
+| `src/exceptions.py` | Custom exception hierarchy: `TradingAgentError`, `MarketDataError`, `TickerNotFoundError`, `IndicatorComputationError`, `WorkflowExecutionError` |
 | `tests/unit/test_security.py` | Unit tests: ticker sanitization, risk limits (incl. `requires_review`), disclaimer |
 | `tests/unit/test_mcp_sanitization.py` | Unit tests: MCP tool input rejection + cache hit (no network) |
 | `tests/integration/test_mcp_tools_live.py` | Integration tests: live yfinance calls (marked `@pytest.mark.integration`) |

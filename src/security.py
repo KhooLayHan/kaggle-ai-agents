@@ -1,3 +1,5 @@
+"""Security guardrails: ticker sanitization, risk-limit enforcement, and compliance disclaimer."""
+
 import re
 from typing import Tuple
 

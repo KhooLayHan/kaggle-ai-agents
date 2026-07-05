@@ -5,6 +5,13 @@ from src.security import (
     sanitize_and_format_output,
     RiskAssessment,
 )
+from src.exceptions import (
+    TradingAgentError,
+    MarketDataError,
+    TickerNotFoundError,
+    IndicatorComputationError,
+    WorkflowExecutionError,
+)
 
 
 def test_ticker_sanitization_valid():
@@ -71,3 +78,11 @@ def test_output_disclaimer_appended():
 def test_output_disclaimer_not_duplicated():
     formatted = sanitize_and_format_output("Recommended action is BUY.")
     assert sanitize_and_format_output(formatted) == formatted
+
+
+def test_exception_hierarchy():
+    assert issubclass(MarketDataError, TradingAgentError)
+    assert issubclass(TickerNotFoundError, MarketDataError)
+    assert issubclass(IndicatorComputationError, MarketDataError)
+    assert issubclass(WorkflowExecutionError, TradingAgentError)
+    assert not issubclass(WorkflowExecutionError, MarketDataError)

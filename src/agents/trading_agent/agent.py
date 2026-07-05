@@ -1,3 +1,5 @@
+"""Canonical agent definitions: 3-agent trading workflow with ADK callbacks and MCP toolset."""
+
 import os
 import re
 import sys
@@ -9,17 +11,17 @@ from google.adk.tools.mcp_tool import McpToolset
 from google.genai import types
 from mcp import StdioServerParameters
 
-current_dir = os.path.dirname(os.path.abspath(__file__))
-# Project root is three levels up: src/agents/trading_agent/ → project root
-project_root = os.path.dirname(os.path.dirname(os.path.dirname(current_dir)))
-if project_root not in sys.path:
-    sys.path.insert(0, project_root)
-
 from src.security import (  # noqa: E402
     sanitize_ticker,
     enforce_risk_limits,
     sanitize_and_format_output,
 )
+
+current_dir = os.path.dirname(os.path.abspath(__file__))
+# Project root is three levels up: src/agents/trading_agent/ → project root
+project_root = os.path.dirname(os.path.dirname(os.path.dirname(current_dir)))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
 
 # Load environment variables (e.g. GEMINI_API_KEY)
 load_dotenv()
