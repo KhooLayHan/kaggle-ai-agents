@@ -96,7 +96,7 @@ All commands assume `source .venv/bin/activate` first.
 | `make run` or `adk run src/agents/trading_agent` | Headless interactive session against the workflow |
 | `make test` or `pytest` | Unit tests (offline, no network) — sanitization, risk limits, disclaimer, MCP sanitization |
 | `make test-integration` or `pytest -m integration` | Integration tests (live yfinance network calls) |
-| `make lint` or `ruff check agents/ src/ tests/ main.py` | Lint all source + test files |
+| `make lint` or `ruff check src/ tests/ main.py` | Lint all source + test files |
 | `python main.py` | Print help and available commands |
 | `python main.py --ticker AAPL` | Legacy rich-console CLI via dispatcher |
 | `python src/mcp_server.py` | Run the MCP server standalone over stdio |
