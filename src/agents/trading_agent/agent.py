@@ -1,4 +1,5 @@
 """Canonical agent definitions: 3-agent trading workflow with ADK callbacks and MCP toolset."""
+
 import os
 import re
 import sys
@@ -49,6 +50,7 @@ _SECURITY_REFUSAL = (
     "ticker symbol (optionally with a dot or hyphen, e.g. 'BRK-B')."
 )
 
+
 def _extract_ticker_from_contents(contents: list[types.Content]) -> str | None:
     """Scan the latest user message for a candidate ticker token."""
     for content in reversed(contents):
@@ -61,6 +63,7 @@ def _extract_ticker_from_contents(contents: list[types.Content]) -> str | None:
         if match:
             return match.group(1)
     return None
+
 
 def market_analyst_before_model(
     callback_context: CallbackContext, llm_request: LlmRequest
@@ -89,9 +92,10 @@ def market_analyst_before_model(
     callback_context.state["sanitized_ticker"] = clean
     return None
 
+
 def portfolio_manager_after_model(
     # callback_context: CallbackContext,
-    llm_response: LlmResponse
+    llm_response: LlmResponse,
 ) -> LlmResponse | None:
     """
     Post-model guardrail for the Portfolio Manager.
@@ -116,6 +120,7 @@ def portfolio_manager_after_model(
         usage_metadata=llm_response.usage_metadata,
         grounding_metadata=llm_response.grounding_metadata,
     )
+
 
 # 1. Market Analyst Agent: retrieves market data and produces technical & sentiment analysis
 market_analyst_agent = Agent(
@@ -191,7 +196,7 @@ trading_workflow = Workflow(
         ("START", market_analyst_agent),
         (market_analyst_agent, risk_manager_agent),
         (risk_manager_agent, portfolio_manager_agent),
-    ]
+    ],
 )
 
 # Expose the workflow as the root_agent for Google ADK CLI tool

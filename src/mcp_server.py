@@ -1,4 +1,5 @@
 """FastMCP server exposing stock price, technical indicators, and news tools over stdio transport."""
+
 import functools
 import logging
 import sys
@@ -42,8 +43,10 @@ _DATA_INFRA_ERRORS = (
     OSError,
 )
 
+
 class StockPrice(BaseModel):
     """Live price statistics for a stock ticker."""
+
     ticker: str
     status: str
     current_price: float | None = None
@@ -54,8 +57,10 @@ class StockPrice(BaseModel):
     currency: str = "USD"
     error: str | None = None
 
+
 class TechnicalIndicators(BaseModel):
     """Technical analysis indicators (SMA, RSI, MACD) for a stock ticker."""
+
     ticker: str
     status: str
     latest_close: float | None = None
@@ -66,24 +71,30 @@ class TechnicalIndicators(BaseModel):
     macd_signal: float | None = None
     error: str | None = None
 
+
 class NewsItem(BaseModel):
     """A single news headline for a stock ticker."""
+
     title: str | None = None
     publisher: str | None = None
     link: str | None = None
     type: str | None = None
     uuid: str | None = None
 
+
 class NewsResponse(BaseModel):
     """News headlines response for a stock ticker."""
+
     ticker: str
     status: str
     items: list[NewsItem] = Field(default_factory=list)
     warning: str | None = None
     error: str | None = None
 
+
 def _cached(cache: TTLCache, key_fn: Callable[..., tuple]) -> Callable:
     """Decorator: cache successful tool results under a TTLCache."""
+
     def deco(fn: Callable[..., Any]) -> Callable[..., Any]:
         @functools.wraps(fn)
         def wrapper(*args, **kwargs) -> Any:
@@ -94,8 +105,11 @@ def _cached(cache: TTLCache, key_fn: Callable[..., tuple]) -> Callable:
             if getattr(result, "status", None) == "success":
                 cache[key] = result
             return result
+
         return wrapper
+
     return deco
+
 
 @mcp.tool()
 @_cached(_PRICE_CACHE, lambda t: (t,))
@@ -113,13 +127,19 @@ def get_stock_price(ticker: str) -> StockPrice:
     logger.info("Fetching stock price for: %s", ticker)
     is_valid, ticker_clean = sanitize_ticker(ticker)
     if not is_valid:
-        return StockPrice(ticker=ticker, status="rejected", error=f"Invalid ticker: {ticker!r}")
+        return StockPrice(
+            ticker=ticker, status="rejected", error=f"Invalid ticker: {ticker!r}"
+        )
     try:
         t = yf.Ticker(ticker_clean)
         info = t.info
 
         # Extract relevant fields fallback chain
-        current_price = info.get("currentPrice") or info.get("regularMarketPrice") or info.get("previousClose")
+        current_price = (
+            info.get("currentPrice")
+            or info.get("regularMarketPrice")
+            or info.get("previousClose")
+        )
         if current_price is None:
             # Try to get it from history
             hist = t.history(period="1d")
@@ -130,7 +150,9 @@ def get_stock_price(ticker: str) -> StockPrice:
                 low_price = float(hist["Low"].iloc[-1])
                 volume = int(hist["Volume"].iloc[-1])
             else:
-                raise TickerNotFoundError(f"No price data found for ticker: {ticker_clean}")
+                raise TickerNotFoundError(
+                    f"No price data found for ticker: {ticker_clean}"
+                )
         else:
             open_price = info.get("open") or info.get("regularMarketOpen")
             high_price = info.get("dayHigh") or info.get("regularMarketDayHigh")
@@ -155,6 +177,7 @@ def get_stock_price(ticker: str) -> StockPrice:
     except _DATA_INFRA_ERRORS as e:
         logger.error("Error fetching price for %s: %s", ticker_clean, e)
         return StockPrice(ticker=ticker_clean, status="failed", error=str(e))
+
 
 @mcp.tool()
 @_cached(_INDICATORS_CACHE, lambda t, p="3mo": (t, p))
@@ -189,7 +212,11 @@ def get_technical_indicators(ticker: str, period: str = "3mo") -> TechnicalIndic
 
         # Calculate SMAs
         sma_20 = float(close_prices.rolling(window=20).mean().iloc[-1])
-        sma_50 = float(close_prices.rolling(window=50).mean().iloc[-1]) if len(close_prices) >= 50 else None
+        sma_50 = (
+            float(close_prices.rolling(window=50).mean().iloc[-1])
+            if len(close_prices) >= 50
+            else None
+        )
 
         # Calculate RSI (14-period)
         delta = close_prices.diff()
@@ -220,10 +247,13 @@ def get_technical_indicators(ticker: str, period: str = "3mo") -> TechnicalIndic
         )
     except IndicatorComputationError as e:
         logger.error("Indicator computation failed for %s: %s", ticker_clean, e)
-        return TechnicalIndicators(ticker=ticker_clean, status="insufficient_data", error=str(e))
+        return TechnicalIndicators(
+            ticker=ticker_clean, status="insufficient_data", error=str(e)
+        )
     except _DATA_INFRA_ERRORS as e:
         logger.error("Error computing indicators for %s: %s", ticker_clean, e)
         return TechnicalIndicators(ticker=ticker_clean, status="failed", error=str(e))
+
 
 @mcp.tool()
 @_cached(_NEWS_CACHE, lambda t: (t,))
@@ -268,6 +298,7 @@ def get_stock_news(ticker: str) -> NewsResponse:
     except _DATA_INFRA_ERRORS as e:
         logger.error("Error fetching news for %s: %s", ticker_clean, e)
         return NewsResponse(ticker=ticker_clean, status="failed", error=str(e))
+
 
 if __name__ == "__main__":
     # Run server via stdio transport

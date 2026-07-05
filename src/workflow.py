@@ -1,4 +1,5 @@
 """ADK workflow runner that drives the sequential Market Analyst → Risk Manager → Portfolio Manager pipeline."""
+
 from typing import Generator
 
 from dotenv import load_dotenv
@@ -10,6 +11,7 @@ from google.genai import types
 from src.agents.trading_agent.agent import trading_workflow
 
 load_dotenv()
+
 
 def run_trading_workflow(ticker: str) -> Generator[Event, None, None]:
     """
@@ -25,13 +27,11 @@ def run_trading_workflow(ticker: str) -> Generator[Event, None, None]:
             types.Part.from_text(
                 text=f"Analyze the stock symbol: {ticker}. Please retrieve the price, indicators, and news."
             )
-        ]
+        ],
     )
 
     events = runner.run(
-        user_id="default_user",
-        session_id=f"session_{ticker}",
-        new_message=msg
+        user_id="default_user", session_id=f"session_{ticker}", new_message=msg
     )
 
     return events

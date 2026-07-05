@@ -1,4 +1,5 @@
 """Unit tests for MCP tool input sanitization — no network, monkeypatched yfinance."""
+
 from unittest.mock import MagicMock
 
 import src.mcp_server as mcp_server

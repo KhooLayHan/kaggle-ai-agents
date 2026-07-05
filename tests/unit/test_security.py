@@ -1,4 +1,5 @@
 """Unit tests for src.security — ticker sanitization, risk limits, disclaimer."""
+
 from src.security import (
     sanitize_ticker,
     enforce_risk_limits,

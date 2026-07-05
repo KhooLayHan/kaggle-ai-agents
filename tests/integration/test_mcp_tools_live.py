@@ -1,4 +1,5 @@
 """Integration tests — live network calls to yfinance. Skipped by default."""
+
 import pytest
 
 from src.mcp_server import get_stock_price, get_technical_indicators

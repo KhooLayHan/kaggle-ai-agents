@@ -8,9 +8,11 @@ Usage:
 The primary run path is `adk web` / `adk run trading_agent` (see README.md).
 This dispatcher exists so `python main.py` is never a dead-end stub.
 """
+
 import argparse
 import subprocess
 from src.cli import run_agent_cli
+
 
 def main():
     """Temp"""
