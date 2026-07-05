@@ -15,6 +15,9 @@ test-integration:
 lint:
 	ruff check src/ tests/ main.py
 
+format:
+	ruff format src/ tests/ main.py
+
 run:
 	adk run src/agents/trading_agent
 

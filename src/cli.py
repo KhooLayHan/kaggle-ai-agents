@@ -1,5 +1,4 @@
 """Legacy rich-console CLI for the multi-agent trading system with pre/post guardrails."""
-
 import sys
 from rich.console import Console
 from rich.panel import Panel

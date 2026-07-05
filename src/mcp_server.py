@@ -1,5 +1,4 @@
 """FastMCP server exposing stock price, technical indicators, and news tools over stdio transport."""
-
 import functools
 import logging
 import sys
@@ -43,7 +42,6 @@ _DATA_INFRA_ERRORS = (
     OSError,
 )
 
-
 class StockPrice(BaseModel):
     """Live price statistics for a stock ticker."""
     ticker: str
@@ -55,7 +53,6 @@ class StockPrice(BaseModel):
     volume: int | None = None
     currency: str = "USD"
     error: str | None = None
-
 
 class TechnicalIndicators(BaseModel):
     """Technical analysis indicators (SMA, RSI, MACD) for a stock ticker."""
@@ -69,7 +66,6 @@ class TechnicalIndicators(BaseModel):
     macd_signal: float | None = None
     error: str | None = None
 
-
 class NewsItem(BaseModel):
     """A single news headline for a stock ticker."""
     title: str | None = None
@@ -78,7 +74,6 @@ class NewsItem(BaseModel):
     type: str | None = None
     uuid: str | None = None
 
-
 class NewsResponse(BaseModel):
     """News headlines response for a stock ticker."""
     ticker: str
@@ -86,7 +81,6 @@ class NewsResponse(BaseModel):
     items: list[NewsItem] = Field(default_factory=list)
     warning: str | None = None
     error: str | None = None
-
 
 def _cached(cache: TTLCache, key_fn: Callable[..., tuple]) -> Callable:
     """Decorator: cache successful tool results under a TTLCache."""
@@ -102,7 +96,6 @@ def _cached(cache: TTLCache, key_fn: Callable[..., tuple]) -> Callable:
             return result
         return wrapper
     return deco
-
 
 @mcp.tool()
 @_cached(_PRICE_CACHE, lambda t: (t,))

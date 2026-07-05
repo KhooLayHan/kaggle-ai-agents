@@ -1,5 +1,4 @@
 """Canonical agent definitions: 3-agent trading workflow with ADK callbacks and MCP toolset."""
-
 import os
 import re
 import sys
@@ -23,7 +22,6 @@ project_root = os.path.dirname(os.path.dirname(os.path.dirname(current_dir)))
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
-# Load environment variables (e.g. GEMINI_API_KEY)
 load_dotenv()
 
 # Path to the MCP server launched as a subprocess for the Analyst Agent
@@ -51,7 +49,6 @@ _SECURITY_REFUSAL = (
     "ticker symbol (optionally with a dot or hyphen, e.g. 'BRK-B')."
 )
 
-
 def _extract_ticker_from_contents(contents: list[types.Content]) -> str | None:
     """Scan the latest user message for a candidate ticker token."""
     for content in reversed(contents):
@@ -64,7 +61,6 @@ def _extract_ticker_from_contents(contents: list[types.Content]) -> str | None:
         if match:
             return match.group(1)
     return None
-
 
 def market_analyst_before_model(
     callback_context: CallbackContext, llm_request: LlmRequest
@@ -93,9 +89,9 @@ def market_analyst_before_model(
     callback_context.state["sanitized_ticker"] = clean
     return None
 
-
 def portfolio_manager_after_model(
-    callback_context: CallbackContext, llm_response: LlmResponse
+    # callback_context: CallbackContext,
+    llm_response: LlmResponse
 ) -> LlmResponse | None:
     """
     Post-model guardrail for the Portfolio Manager.
@@ -120,7 +116,6 @@ def portfolio_manager_after_model(
         usage_metadata=llm_response.usage_metadata,
         grounding_metadata=llm_response.grounding_metadata,
     )
-
 
 # 1. Market Analyst Agent: retrieves market data and produces technical & sentiment analysis
 market_analyst_agent = Agent(

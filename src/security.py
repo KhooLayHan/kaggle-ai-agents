@@ -1,10 +1,8 @@
 """Security guardrails: ticker sanitization, risk-limit enforcement, and compliance disclaimer."""
-
 import re
 from typing import Tuple
 
 from pydantic import BaseModel, Field
-
 
 class RiskAssessment(BaseModel):
     """Structured result of `enforce_risk_limits`, returned to the Risk Manager agent."""
