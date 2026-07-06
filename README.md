@@ -99,7 +99,7 @@ Build and run the agent system inside a secure, containerized sandbox:
 docker build -t trading-agent .
 
 # Run market analysis
-docker run --env GEMINI_API_KEY="your_api_key" trading-agent --ticker TSLA
+docker run --env GOOGLE_API_KEY="your_api_key" trading-agent --ticker TSLA
 ```
 
 ---
