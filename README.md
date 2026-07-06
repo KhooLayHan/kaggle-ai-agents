@@ -37,8 +37,8 @@ A modular, production-grade AI Agent system developed for the **Kaggle AI Agents
 2. **Configure API Key**:
    Create a `.env` file in the project root:
 
-   ```env
-   GEMINI_API_KEY="your-gemini-api-key-here"
+   ```bash
+   cp .env.example .env
    ```
 
 ---
