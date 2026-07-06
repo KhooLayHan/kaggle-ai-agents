@@ -78,7 +78,7 @@ Analyzes any stock ticker via a colorized terminal interface with its own
 pre/post guardrails (defense in depth with the ADK callbacks):
 
 ```bash
-python src/cli.py --ticker GOOGL
+python main.py --ticker GOOGL
 ```
 
 ### 3. Run the MCP Server Standalone
