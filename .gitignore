@@ -216,3 +216,6 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Google Development Kit (ADK)
+src/agents/trading_agents/.adk
